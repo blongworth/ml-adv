@@ -145,6 +145,17 @@ void ADV::parseVVD(byte buf[VVDLength], double VVD[]) {//see p37 of Integration 
   VVD[13] = s16bit(buf[8], buf[9]);
 }
 
+int ADV::calcChecksum(short *advBuf, int n)
+{
+  short hChecksum = 0xb58c;
+  for (int i = 0; i < n; i++)
+  {
+    hChecksum += advBuf[i];
+  }
+  
+  return hChecksum;
+}
+
 void ADV::parseVSD(byte buf[VSDLength], double VSD[]) {
   // min, sec, day, hour, year, month
   VSD[0] = BCD_Convert(buf[4]);
