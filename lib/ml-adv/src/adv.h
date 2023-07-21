@@ -33,7 +33,8 @@ private:
     int s16bit(int bit8a, int bit8b);
     void parseVSD(byte buf[VSDLength], double VSD[]);
     void parseVVD(byte buf[VVDLength], double VVD[]); //see p37 of Integration Manual for vvd structure
-    int calcChecksum(short *advBuf, int n);
+    int calcChecksum(byte* packet, int length);
+    boolean validatePacket(byte* packet, int length);
 
 public:
     ADV();

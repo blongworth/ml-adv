@@ -145,15 +145,31 @@ void ADV::parseVVD(byte buf[VVDLength], double VVD[]) {//see p37 of Integration 
   VVD[13] = s16bit(buf[8], buf[9]);
 }
 
-int ADV::calcChecksum(short *advBuf, int n)
-{
-  short hChecksum = 0xb58c;
-  for (int i = 0; i < n; i++)
-  {
-    hChecksum += advBuf[i];
+// Calculate checksum of packet data
+int ADV::calcChecksum(byte* packet, int length) {
+  int checksum = 0xb58c;
+
+  for (int i = 0; i < length; i++) {
+    checksum += packet[i];
   }
   
-  return hChecksum;
+  return checksum;
+}
+
+boolean ADV::validatePacket(byte *packet, int length) {
+  // Calculate checksum
+  int checksum = calcChecksum(packet, length);
+  
+  // Extract checksum bytes from packet
+  int packetChecksum = packet[length-2] << 8 | packet[length-1]; 
+
+  // Compare calculated vs packet checksum
+  if(checksum == packetChecksum) {
+    return true;
+  }
+  else {
+    return false;
+  }
 }
 
 void ADV::parseVSD(byte buf[VSDLength], double VSD[]) {
@@ -222,11 +238,17 @@ int ADV::getVSD() {
 int ADV::getVVDPacket() {
   if (!VVDReady) return 0;
   Serial.print("New VVD packet: ");
-  for (int i = 0; i < VVDLength; ++i) {
-    Serial.print(ADVpacket[i]);
-    Serial.print(",");
+  if(validatePacket(ADVpacket, VVDLength)) {
+    // Packet data is valid
+    for (int i = 0; i < VVDLength; ++i) {
+      Serial.print(ADVpacket[i]);
+      Serial.print(",");
+    }
+    Serial.println();
   }
-  Serial.println();
+  else {
+    Serial.println("Bad Checksum");
+  }
   newData = false;
   VVDReady = false;
   return 1;
@@ -235,11 +257,17 @@ int ADV::getVVDPacket() {
 int ADV::getVSDPacket() {
   if (!VSDReady) return 0;
   Serial.print("New VSD packet: ");
-  for (int i = 0; i < VSDLength; ++i) {
-    Serial.print(ADVpacket[i]);
-    Serial.print(",");
+  if(validatePacket(ADVpacket, VSDLength)) {
+    // Packet data is valid
+    for (int i = 0; i < VSDLength; ++i) {
+      Serial.print(ADVpacket[i]);
+      Serial.print(",");
+    }
+    Serial.println();
   }
-  Serial.println();
+  else {
+    Serial.println("Bad Checksum");
+  }
   newData = false;
   VSDReady = false;
   return 1;
