@@ -1,9 +1,16 @@
-# ml-adv
+# Nortek Vector ADV Arduino Library
 
-Arduino library for Norkek Vector ADVs.
+This library allows control and data transfer for Nortek Vector ADV's via
+serial from the Arduino platform. Tested with Teensy 4.1 and the teensyduino
+framework.
 
-Currently has functions for starting ADV in streaming mode and for reading and parsing ADV data. Data is currently parsed to text; need a better return format (structure or class variables).
+# Use
 
-`lib` contains library code and headers.
+The library provides an ADV class with functions for initializing the ADV,
+setting the ADV to stream data via serial, and for reading and parsing 
+status and data packets.
 
-`src` contains a simple example. This should include the library and run as is with the PlatformIO IDE. Change `.cpp` to `.ino` for use with Arduino IDE.
+To enable fast, non-blocking reading of data, `ADV.read()` should run in a 
+`loop()` that runs many times per second. `ADV.getVVDPacket()` and 
+`ADV.getVSDPacket()` will poll for a complete, parsed packet and return 0 if 
+a new packet is not ready.
