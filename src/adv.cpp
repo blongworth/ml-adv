@@ -87,6 +87,33 @@ void ADV::read_serial() {
   }
 }
 
+// Calculate checksum of packet data
+int ADV::calcChecksum(byte* packet, int length) {
+  int checksum = 0xb58c;
+
+  for (int i = 0; i < length; i++) {
+    checksum += packet[i];
+  }
+  
+  return checksum;
+}
+
+boolean ADV::validatePacket(byte *packet, int length) {
+  // Calculate checksum
+  int checksum = calcChecksum(packet, length);
+  
+  // Extract checksum bytes from packet
+  int packetChecksum = packet[length-2] << 8 | packet[length-1]; 
+
+  // Compare calculated vs packet checksum
+  if(checksum == packetChecksum) {
+    return true;
+  }
+  else {
+    return false;
+  }
+}
+
 int ADV::BCD_Convert(int bit8) {
   byte b[2];
   b[0] = bit8 >> 4; //shift the binary to read left most bits
