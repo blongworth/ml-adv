@@ -115,35 +115,31 @@ int ADV::s16bit(int bit8a, int bit8b) {
   return num2;
 }
 
-void ADV::parseVVD(byte buf[VVDLength], double VVD[]) {//see p37 of Integration Manual for vvd structure
-  //code reads until 165, 165 is not included. 165 is designator to start data packet.
-  //this is why buf[0] = offset 1 in integration manual
-  //buf is the datapacket offset by 1
+void ADV::parseVVD(byte buf[VVDLength], int VVD[]) {//see p37 of Integration Manual for vvd structure
 
   VVD[0] = buf[3]; //first cell in the VVD[]--> count
+  // Pressure (0.001 dbar) = 65536×PressureMSB + PressureLSW
   int PressureMSB = buf[4];
-  int PressureLSW = s16bit(buf[6], buf[7]) * 65536;
-  VVD[1] = (PressureMSB + PressureLSW);//pressure msb + lsw, ask matt what this is??
-  //velocity x.y.z
+  int PressureLSW = s16bit(buf[6], buf[7]);
+  VVD[1] = PressureMSB * 65536 + PressureLSW;
+  //velocity x.y.z (mm/s)
   VVD[2] = s16bit(buf[10], buf[11]);//x
   VVD[3] = s16bit(buf[12], buf[13]);//y
   VVD[4] = s16bit(buf[14], buf[15]);//z
-  // amp
-  VVD[5] = buf[16];//amplitude beam1
+  // amplitude
+  VVD[5] = buf[16];
   VVD[6] = buf[17];
   VVD[7] = buf[18];
-  //corr
+  //correlation (0-100%)
   VVD[8] = buf[19];
   VVD[9] = buf[20];
   VVD[10] = buf[21];
-  // AnaIn (this can't be right)
-  VVD[11] = buf[2];
-  // analog inputs
-  VVD[12] = buf[2]+(buf[5]*256);
-  VVD[13] = s16bit(buf[8], buf[9]);
+  VVD[11] = s16bit(buf[8], buf[9]); // Analog in 1
+  VVD[12] = buf[5] * 256 + buf[2]; // analog in 2
+  VVD[13] = s16bit(buf[22], buf[23]); //checksum
 }
 
-void ADV::parseVSD(byte buf[VSDLength], double VSD[]) {
+void ADV::parseVSD(byte buf[VSDLength], int VSD[]) {
   // min, sec, day, hour, year, month
   VSD[0] = BCD_Convert(buf[4]);
   VSD[1] = BCD_Convert(buf[5]);
@@ -151,13 +147,17 @@ void ADV::parseVSD(byte buf[VSDLength], double VSD[]) {
   VSD[3] = BCD_Convert(buf[7]);
   VSD[4] = BCD_Convert(buf[8]);
   VSD[5] = BCD_Convert(buf[9]);
-  // bat*0.1, soundspeed*0.1, heading*0.1, pitch*0.1, roll*0.1, temp*0.01
+  // bat*0.1V, soundspeed*0.1m/s, heading*0.1deg, pitch*0.1deg, roll*0.1deg, temp*0.01degC
   VSD[6] = s16bit(buf[10], buf[11]);
   VSD[7] = s16bit(buf[12], buf[13]);
   VSD[8] = s16bit(buf[14], buf[15]);
   VSD[9] = s16bit(buf[16], buf[17]);
   VSD[10] = s16bit(buf[18], buf[19]);
   VSD[11] = s16bit(buf[20], buf[21]);
+  VSD[12] = buf[22]; // error byte
+  VSD[13] = buf[23]; // status byte
+  VSD[14] = s16bit(buf[24], buf[25]); // Analog input
+  VSD[15] = s16bit(buf[26], buf[27]); // checksum
 }
 
 int ADV::getVVD() {
@@ -169,7 +169,7 @@ int ADV::getVVD() {
   }
   Serial.println();
 
-  double VVD[14];
+  int VVD[14];
   parseVVD(ADVpacket, VVD);
   Serial.print("New VVD data: ");
   for (int i = 0; i < 14; ++i) {
@@ -192,7 +192,7 @@ int ADV::getVSD() {
   }
   Serial.println();
 
-  double VSD[12];
+  int VSD[16];
   parseVSD(ADVpacket, VSD);
   Serial.print("New VSD data: ");
   for (int i = 0; i < 12; ++i) {

@@ -31,8 +31,8 @@ private:
     void read_serial();
     int BCD_Convert(int bit8);
     int s16bit(int bit8a, int bit8b);
-    void parseVSD(byte buf[VSDLength], double VSD[]);
-    void parseVVD(byte buf[VVDLength], double VVD[]); //see p37 of Integration Manual for vvd structure
+    void parseVSD(byte buf[VSDLength], int VSD[]);
+    void parseVVD(byte buf[VVDLength], int VVD[]); //see p37 of Integration Manual for vvd structure
 
 public:
     ADV(Stream &serial);
