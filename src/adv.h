@@ -29,8 +29,9 @@ private:
     Stream &serial;
     
     void read_serial();
-    int BCD_Convert(int bit8);
-    int s16bit(int bit8a, int bit8b);
+    int BCD_Convert(char bit8);
+    int s16bit(char bit8a, char bit8b);
+    int u16bit(char bit8a, char bit8b);
     void parseVSD(byte buf[VSDLength], int VSD[]);
     void parseVVD(byte buf[VVDLength], int VVD[]); //see p37 of Integration Manual for vvd structure
 

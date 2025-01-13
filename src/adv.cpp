@@ -87,7 +87,7 @@ void ADV::read_serial() {
   }
 }
 
-int ADV::BCD_Convert(int bit8) {
+int ADV::BCD_Convert(char bit8) {
   byte b[2];
   b[0] = bit8 >> 4; //shift the binary to read left most bits
   b[1] = (bit8 << 4); //shift the binary to read right most bits
@@ -96,18 +96,7 @@ int ADV::BCD_Convert(int bit8) {
   return num1;
 }
 
-// why not these for BCD conversion?
-// byte bcdToDec(byte val)
-// {
-//   return( (val/16*10) + (val%16) );
-// }
-// 
-// byte decToBcd(byte val)
-// {
-//   return( (val/10*16) + (val%10) );
-// }
-
-int ADV::s16bit(int bit8a, int bit8b) {
+int ADV::s16bit(char bit8a, char bit8b) {
   int num2 = bit8a + bit8b * 256;
   if (num2 >= 32768) {
     num2 = num2 - 65536;
@@ -115,9 +104,13 @@ int ADV::s16bit(int bit8a, int bit8b) {
   return num2;
 }
 
-void ADV::parseVVD(byte buf[VVDLength], int VVD[]) {//see p37 of Integration Manual for vvd structure
+int ADV::u16bit(char bit8a, char bit8b) {
+  int num2 = bit8a + bit8b * 256;
+  return num2;
+}
 
-  VVD[0] = buf[3]; //first cell in the VVD[]--> count
+void ADV::parseVVD(byte buf[VVDLength], int VVD[]) {//see p37 of Integration Manual for vvd structure
+  VVD[0] = buf[3]; // count
   // Pressure (0.001 dbar) = 65536×PressureMSB + PressureLSW
   int PressureMSB = buf[4];
   int PressureLSW = s16bit(buf[6], buf[7]);
@@ -134,7 +127,7 @@ void ADV::parseVVD(byte buf[VVDLength], int VVD[]) {//see p37 of Integration Man
   VVD[8] = buf[19];
   VVD[9] = buf[20];
   VVD[10] = buf[21];
-  VVD[11] = s16bit(buf[8], buf[9]); // Analog in 1
+  VVD[11] = u16bit(buf[8], buf[9]); // Analog in 1, unsigned for pH
   VVD[12] = buf[5] * 256 + buf[2]; // analog in 2
   VVD[13] = s16bit(buf[22], buf[23]); //checksum
 }
@@ -147,13 +140,12 @@ void ADV::parseVSD(byte buf[VSDLength], int VSD[]) {
   VSD[3] = BCD_Convert(buf[7]);
   VSD[4] = BCD_Convert(buf[8]);
   VSD[5] = BCD_Convert(buf[9]);
-  // bat*0.1V, soundspeed*0.1m/s, heading*0.1deg, pitch*0.1deg, roll*0.1deg, temp*0.01degC
-  VSD[6] = s16bit(buf[10], buf[11]);
-  VSD[7] = s16bit(buf[12], buf[13]);
-  VSD[8] = s16bit(buf[14], buf[15]);
-  VSD[9] = s16bit(buf[16], buf[17]);
-  VSD[10] = s16bit(buf[18], buf[19]);
-  VSD[11] = s16bit(buf[20], buf[21]);
+  VSD[6] = s16bit(buf[10], buf[11]); // bat*0.1V
+  VSD[7] = s16bit(buf[12], buf[13]); // soundspeed*0.1m/s
+  VSD[8] = s16bit(buf[14], buf[15]); // heading*0.1deg
+  VSD[9] = s16bit(buf[16], buf[17]); // pitch*0.1deg
+  VSD[10] = s16bit(buf[18], buf[19]); // roll*0.1deg
+  VSD[11] = s16bit(buf[20], buf[21]); // temp*0.01degC
   VSD[12] = buf[22]; // error byte
   VSD[13] = buf[23]; // status byte
   VSD[14] = s16bit(buf[24], buf[25]); // Analog input
