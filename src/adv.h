@@ -16,6 +16,7 @@
 // #define ADV_SERIAL Serial3
 // no longer needed. Use appropriate Serial object in constructor
 const byte VVDChar = 16; //VVD packet designator
+const byte VSDChar = 17; //VVD packet designator
 const byte VVDLength = 24; //length of VVD packets
 const byte VSDLength = 28; //length of VSD packets
 const byte numChars = 28; //length of ADV packets

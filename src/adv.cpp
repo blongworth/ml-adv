@@ -61,13 +61,17 @@ void ADV::read_serial() {
     rc = serial.read();
     if (recvInProgress == true) {
       if (ndx == 1) {
-        if (rc == VVDChar) {
-          packetLength = VVDLength;
-        } else {
-          packetLength = VSDLength;
-        }
         ADVpacket[ndx] = rc;
         ndx++;
+        if (rc == VVDChar) {
+          packetLength = VVDLength;
+        } else if (rc == VSDChar) {
+          packetLength = VSDLength;
+        } else {
+          recvInProgress = false;
+          ndx = 0;
+        }
+        
       } else if (ndx == packetLength - 1) { // whole packet received
         ADVpacket[ndx] = rc;
         ndx++;
@@ -163,7 +167,7 @@ int ADV::getVVD() {
 
   int VVD[14];
   parseVVD(ADVpacket, VVD);
-  Serial.print("New VVD data: ");
+  Serial.print("D:");
   for (int i = 0; i < 14; ++i) {
     Serial.print(VVD[i]);
     Serial.print(",");
@@ -186,8 +190,8 @@ int ADV::getVSD() {
 
   int VSD[16];
   parseVSD(ADVpacket, VSD);
-  Serial.print("New VSD data: ");
-  for (int i = 0; i < 12; ++i) {
+  Serial.print("S:");
+  for (int i = 0; i < 16; ++i) {
     Serial.print(VSD[i]);
     Serial.print(",");
   }
