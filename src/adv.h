@@ -16,6 +16,7 @@
 // #define ADV_SERIAL Serial3
 // no longer needed. Use appropriate Serial object in constructor
 const byte VVDChar = 16; //VVD packet designator
+const byte VSDChar = 17; //VVD packet designator
 const byte VVDLength = 24; //length of VVD packets
 const byte VSDLength = 28; //length of VSD packets
 const byte numChars = 28; //length of ADV packets
@@ -29,12 +30,13 @@ private:
     Stream &serial;
     
     void read_serial();
-    int BCD_Convert(int bit8);
-    int s16bit(int bit8a, int bit8b);
-    void parseVSD(byte buf[VSDLength], double VSD[]);
-    void parseVVD(byte buf[VVDLength], double VVD[]); //see p37 of Integration Manual for vvd structure
     int calcChecksum(byte* packet, int length);
     boolean validatePacket(byte* packet, int length);
+    int BCD_Convert(char bit8);
+    int s16bit(char bit8a, char bit8b);
+    int u16bit(char bit8a, char bit8b);
+    void parseVSD(byte buf[VSDLength], int VSD[]);
+    void parseVVD(byte buf[VVDLength], int VVD[]); //see p37 of Integration Manual for vvd structure
 
 public:
     ADV(Stream &serial);
