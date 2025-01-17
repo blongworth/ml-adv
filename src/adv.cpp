@@ -40,6 +40,11 @@ void ADV::read()
   read_serial();
   if (newData)
   {
+    if (!validatePacket(ADVpacket, VVDLength))
+    {
+      Serial.println("VVD packet failed checksum");
+      return;
+    }
     if (ADVpacket[1] == VVDChar)
     {
       VVDReady = 1;
@@ -87,14 +92,14 @@ void ADV::read_serial() {
   }
 }
 
-// Calculate checksum of packet data
 int ADV::calcChecksum(byte* packet, int length) {
   int checksum = 0xb58c;
 
-  for (int i = 0; i < length; i++) {
-    checksum += packet[i];
+  for (int i = 0; i < length; i += 2) {
+    int word = packet[i] << 8 | packet[i + 1];
+    checksum += word;
   }
-  
+
   return checksum;
 }
 
