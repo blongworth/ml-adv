@@ -132,7 +132,7 @@ void ADV::parseVVD(byte buf[VVDLength], int VVD[]) {//see p37 of Integration Man
   VVD[9] = buf[20];
   VVD[10] = buf[21];
   VVD[11] = u16bit(buf[8], buf[9]); // Analog in 1, unsigned for pH
-  VVD[12] = buf[5] * 256 + buf[2]; // analog in 2
+  VVD[12] = s16bit(buf[2], buf[5]); // analog in 2
   VVD[13] = s16bit(buf[22], buf[23]); //checksum
 }
 
@@ -160,12 +160,11 @@ int ADV::getVVD() {
   if (!VVDReady) return 0;
   int VVD[14];
   parseVVD(ADVpacket, VVD);
-  Serial.print("D:");
-  for (int i = 0; i < 14; ++i) {
-    Serial.print(VVD[i]);
-    Serial.print(",");
-  }
-  Serial.println();
+  char buf[128];
+  int n = snprintf(buf, sizeof(buf), "D:%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
+    VVD[0], VVD[1], VVD[2], VVD[3], VVD[4], VVD[5], VVD[6], VVD[7],
+    VVD[8], VVD[9], VVD[10], VVD[11], VVD[12], VVD[13]);
+  Serial.write(buf, n);
   newData = false;
   VVDReady = false;
   return 1;
@@ -175,12 +174,11 @@ int ADV::getVSD() {
   if (!VSDReady) return 0;
   int VSD[16];
   parseVSD(ADVpacket, VSD);
-  Serial.print("S:");
-  for (int i = 0; i < 16; ++i) {
-    Serial.print(VSD[i]);
-    Serial.print(",");
-  }
-  Serial.println();
+  char buf[128];
+  int n = snprintf(buf, sizeof(buf), "S:%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
+    VSD[0], VSD[1], VSD[2], VSD[3], VSD[4], VSD[5], VSD[6], VSD[7],
+    VSD[8], VSD[9], VSD[10], VSD[11], VSD[12], VSD[13], VSD[14], VSD[15]);
+  Serial.write(buf, n);
   newData = false;
   VSDReady = false;
   return 1;
