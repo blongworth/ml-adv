@@ -158,13 +158,6 @@ void ADV::parseVSD(byte buf[VSDLength], int VSD[]) {
 
 int ADV::getVVD() {
   if (!VVDReady) return 0;
-  Serial.print("New VVD packet: ");
-  for (int i = 0; i < VVDLength; ++i) {
-    Serial.print(ADVpacket[i]);
-    Serial.print(",");
-  }
-  Serial.println();
-
   int VVD[14];
   parseVVD(ADVpacket, VVD);
   Serial.print("D:");
@@ -173,7 +166,6 @@ int ADV::getVVD() {
     Serial.print(",");
   }
   Serial.println();
-  Serial.println();
   newData = false;
   VVDReady = false;
   return 1;
@@ -181,13 +173,6 @@ int ADV::getVVD() {
 
 int ADV::getVSD() {
   if (!VSDReady) return 0;
-  Serial.print("New VSD packet: ");
-  for (int i = 0; i < VSDLength; ++i) {
-    Serial.print(ADVpacket[i]);
-    Serial.print(",");
-  }
-  Serial.println();
-
   int VSD[16];
   parseVSD(ADVpacket, VSD);
   Serial.print("S:");
@@ -196,7 +181,6 @@ int ADV::getVSD() {
     Serial.print(",");
   }
   Serial.println();
-  Serial.println();
   newData = false;
   VSDReady = false;
   return 1;
@@ -204,12 +188,9 @@ int ADV::getVSD() {
 
 int ADV::getVVDPacket() {
   if (!VVDReady) return 0;
-  Serial.print("New VVD packet: ");
   for (int i = 0; i < VVDLength; ++i) {
-    Serial.print(ADVpacket[i]);
-    Serial.print(",");
+    Serial.write(ADVpacket[i]);
   }
-  Serial.println();
   newData = false;
   VVDReady = false;
   return 1;
@@ -217,12 +198,9 @@ int ADV::getVVDPacket() {
 
 int ADV::getVSDPacket() {
   if (!VSDReady) return 0;
-  Serial.print("New VSD packet: ");
   for (int i = 0; i < VSDLength; ++i) {
-    Serial.print(ADVpacket[i]);
-    Serial.print(",");
+    Serial.write(ADVpacket[i]);
   }
-  Serial.println();
   newData = false;
   VSDReady = false;
   return 1;
