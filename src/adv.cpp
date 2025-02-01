@@ -22,12 +22,13 @@
 
 ADV::ADV(Stream &serial) : serial(serial)
 {
-    newData = false;
-    VVDReady = false;
-    VSDReady = false;
+  newData = false;
+  VVDReady = false;
+  VSDReady = false;
 }
 
-void ADV::begin() {
+void ADV::begin()
+{
   serial.write("@@@@@@");
   delay(200);
   serial.write("K1W%!Q");
@@ -48,38 +49,51 @@ void ADV::read()
     {
       VSDReady = 1;
     }
-    //newData = false;
+    // newData = false;
   }
 }
 
-void ADV::read_serial() {
+void ADV::read_serial()
+{
   static byte ndx = 0;
   static boolean recvInProgress = false;
   static byte packetLength;
   byte rc;
-  while (serial.available() > 0 && newData == false) {
+  while (serial.available() > 0 && newData == false)
+  {
     rc = serial.read();
-    if (recvInProgress == true) {
-      if (ndx == 1) {
-        if (rc == VVDChar) {
+    if (recvInProgress == true)
+    {
+      if (ndx == 1)
+      {
+        if (rc == VVDChar)
+        {
           packetLength = VVDLength;
-        } else {
+        }
+        else
+        {
           packetLength = VSDLength;
         }
         ADVpacket[ndx] = rc;
         ndx++;
-      } else if (ndx == packetLength - 1) { // whole packet received
+      }
+      else if (ndx == packetLength - 1)
+      { // whole packet received
         ADVpacket[ndx] = rc;
         ndx++;
         ADVpacket[ndx] = '\0';
         ndx = 0;
         newData = true;
         recvInProgress = false;
-      } else {
+      }
+      else
+      {
         ADVpacket[ndx] = rc;
         ndx++;
       }
-    } else if (rc == startMarker) {
+    }
+    else if (rc == startMarker)
+    {
       ADVpacket[ndx] = rc;
       ndx++;
       recvInProgress = true;
@@ -87,11 +101,12 @@ void ADV::read_serial() {
   }
 }
 
-int ADV::BCD_Convert(int bit8) {
+int ADV::BCD_Convert(int bit8)
+{
   byte b[2];
-  b[0] = bit8 >> 4; //shift the binary to read left most bits
-  b[1] = (bit8 << 4); //shift the binary to read right most bits
-  b[2] = b[1] >> 4; //shift the binary to read left most bits
+  b[0] = bit8 >> 4;   // shift the binary to read left most bits
+  b[1] = (bit8 << 4); // shift the binary to read right most bits
+  b[2] = b[1] >> 4;   // shift the binary to read left most bits
   int num1 = b[0] * 10 + b[2];
   return num1;
 }
@@ -101,115 +116,146 @@ int ADV::BCD_Convert(int bit8) {
 // {
 //   return( (val/16*10) + (val%16) );
 // }
-// 
+//
 // byte decToBcd(byte val)
 // {
 //   return( (val/10*16) + (val%10) );
 // }
 
-int ADV::s16bit(int bit8a, int bit8b) {
+int ADV::s16bit(int bit8a, int bit8b)
+{
   int num2 = bit8a + bit8b * 256;
-  if (num2 >= 32768) {
+  if (num2 >= 32768)
+  {
     num2 = num2 - 65536;
   }
   return num2;
 }
 
-void ADV::parseVVD(byte buf[VVDLength], double VVD[]) {//see p37 of Integration Manual for vvd structure
-  //code reads until 165, 165 is not included. 165 is designator to start data packet.
-  //this is why buf[0] = offset 1 in integration manual
-  //buf is the datapacket offset by 1
-
-  VVD[0] = buf[3]; //first cell in the VVD[]--> count
-  int PressureMSB = buf[4];
-  int PressureLSW = s16bit(buf[6], buf[7]) * 65536;
-  VVD[1] = (PressureMSB + PressureLSW);//pressure msb + lsw, ask matt what this is??
-  //velocity x.y.z
-  VVD[2] = s16bit(buf[10], buf[11]);//x
-  VVD[3] = s16bit(buf[12], buf[13]);//y
-  VVD[4] = s16bit(buf[14], buf[15]);//z
+void ADV::parseVVD(byte buf[VVDLength], VectorVelocityData vvd)
+{
+  // see p37 of Integration Manual for vvd structure
+  vvd.Sync = buf[0];
+  vvd.Id = buf[1];
+  vvd.Count = buf[3];
+  vvd.Pressure = buf[4] * 65536 + (buf[6] + buf[7] * 256);
+  vvd.AnaIn1 = buf[8] + buf[9] * 256;
+  vvd.AnaIn2 = buf[2] + buf[5] * 256;
   // amp
-  VVD[5] = buf[16];//amplitude beam1
-  VVD[6] = buf[17];
-  VVD[7] = buf[18];
-  //corr
-  VVD[8] = buf[19];
-  VVD[9] = buf[20];
-  VVD[10] = buf[21];
-  // AnaIn (this can't be right)
-  VVD[11] = buf[2];
-  // analog inputs
-  VVD[12] = buf[2]+(buf[5]*256);
-  VVD[13] = s16bit(buf[8], buf[9]);
+  vvd.Amplitude[0] = buf[16]; // amplitude beam1
+  vvd.Amplitude[0] = buf[17];
+  vvd.Amplitude[2] = buf[18];
+  // corr
+  vvd.Correlation[0] = buf[19];
+  vvd.Correlation[1] = buf[20];
+  vvd.Correlation[2] = buf[21];
+  // velocity x.y.z
+  vvd.Velocity[0] = s16bit(buf[10], buf[11]); // x
+  vvd.Velocity[1] = s16bit(buf[12], buf[13]); // y
+  vvd.Velocity[2] = s16bit(buf[14], buf[15]); // z
+  vvd.Checksum = s16bit(buf[22], buf[23]);
 }
 
-void ADV::parseVSD(byte buf[VSDLength], double VSD[]) {
-  // min, sec, day, hour, year, month
-  VSD[0] = BCD_Convert(buf[4]);
-  VSD[1] = BCD_Convert(buf[5]);
-  VSD[2] = BCD_Convert(buf[6]);
-  VSD[3] = BCD_Convert(buf[7]);
-  VSD[4] = BCD_Convert(buf[8]);
-  VSD[5] = BCD_Convert(buf[9]);
-  // bat*0.1, soundspeed*0.1, heading*0.1, pitch*0.1, roll*0.1, temp*0.01
-  VSD[6] = s16bit(buf[10], buf[11]);
-  VSD[7] = s16bit(buf[12], buf[13]);
-  VSD[8] = s16bit(buf[14], buf[15]);
-  VSD[9] = s16bit(buf[16], buf[17]);
-  VSD[10] = s16bit(buf[18], buf[19]);
-  VSD[11] = s16bit(buf[20], buf[21]);
+void ADV::parseVSD(byte buf[VSDLength], VectorSystemData vsd)
+{
+  vsd.Sync = buf[0];
+  vsd.Id = buf[1];
+  vsd.Size = buf[2] + buf[3] * 256;
+  vsd.Time.Year = BCD_Convert(buf[8]);
+  vsd.Time.Month = BCD_Convert(buf[9]);
+  vsd.Time.Day = BCD_Convert(buf[6]);
+  vsd.Time.Hour = BCD_Convert(buf[7]);
+  vsd.Time.Minute = BCD_Convert(buf[4]);
+  vsd.Time.Second = BCD_Convert(buf[5]);
+  vsd.Battery = buf[10] + buf[11] * 256;
+  vsd.Soundspeed = buf[12] + buf[13] * 256;
+  vsd.Heading = s16bit(buf[14], buf[15]);
+  vsd.Pitch = s16bit(buf[16], buf[17]);
+  vsd.Roll = s16bit(buf[18], buf[19]);
+  vsd.Temperature = s16bit(buf[20], buf[21]);
+  vsd.Error = buf[22];
+  vsd.Status = buf[23];
+  vsd.AnaIn = buf[24] + buf[25] * 256;
+  vsd.Checksum = s16bit(buf[26], buf[27]);
 }
 
-int ADV::getVVD() {
-  if (!VVDReady) return 0;
+int ADV::getVVD()
+{
+  if (!VVDReady)
+    return 0;
   Serial.print("New VVD packet: ");
-  for (int i = 0; i < VVDLength; ++i) {
+  for (int i = 0; i < VVDLength; ++i)
+  {
     Serial.print(ADVpacket[i]);
     Serial.print(",");
   }
   Serial.println();
 
-  double VVD[14];
-  parseVVD(ADVpacket, VVD);
+  VectorVelocityData vvd;
+  parseVVD(ADVpacket, vvd);
   Serial.print("New VVD data: ");
-  for (int i = 0; i < 14; ++i) {
-    Serial.print(VVD[i]);
-    Serial.print(",");
+  char buffer[256];
+  int pos = 0;
+  pos += snprintf(buffer + pos, sizeof(buffer) - pos, "%d,%d,%d,%d,%d,%d,",
+                  vvd.Sync, vvd.Id, vvd.Count, vvd.Pressure, vvd.AnaIn1, vvd.AnaIn2);
+
+  for (int i = 0; i < 3; i++)
+  {
+    pos += snprintf(buffer + pos, sizeof(buffer) - pos, "%d,", vvd.Amplitude[i]);
   }
-  Serial.println();
+  for (int i = 0; i < 3; i++)
+  {
+    pos += snprintf(buffer + pos, sizeof(buffer) - pos, "%d,", vvd.Correlation[i]);
+  }
+  for (int i = 0; i < 3; i++)
+  {
+    pos += snprintf(buffer + pos, sizeof(buffer) - pos, "%d,", vvd.Velocity[i]);
+  }
+  pos += snprintf(buffer + pos, sizeof(buffer) - pos, "%d", vvd.Checksum);
+  Serial.println(buffer);
   Serial.println();
   newData = false;
   VVDReady = false;
   return 1;
 }
 
-int ADV::getVSD() {
-  if (!VSDReady) return 0;
+int ADV::getVSD()
+{
+  if (!VSDReady)
+    return 0;
   Serial.print("New VSD packet: ");
-  for (int i = 0; i < VSDLength; ++i) {
+  for (int i = 0; i < VSDLength; ++i)
+  {
     Serial.print(ADVpacket[i]);
     Serial.print(",");
   }
   Serial.println();
 
-  double VSD[12];
-  parseVSD(ADVpacket, VSD);
+  VectorSystemData vsd;
+  parseVSD(ADVpacket, vsd);
   Serial.print("New VSD data: ");
-  for (int i = 0; i < 12; ++i) {
-    Serial.print(VSD[i]);
-    Serial.print(",");
-  }
-  Serial.println();
+  char buffer[256];
+  int pos = 0;
+  pos += snprintf(buffer + pos, sizeof(buffer) - pos, "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
+          vsd.Sync, vsd.Id, vsd.Size,
+          vsd.Time.Year, vsd.Time.Month, vsd.Time.Day,
+          vsd.Time.Hour, vsd.Time.Minute, vsd.Time.Second,
+          vsd.Battery, vsd.Soundspeed, vsd.Heading,
+          vsd.Pitch, vsd.Roll, vsd.Temperature,
+          vsd.Error, vsd.Status, vsd.Checksum);
   Serial.println();
   newData = false;
   VSDReady = false;
   return 1;
 }
 
-int ADV::getVVDPacket() {
-  if (!VVDReady) return 0;
+int ADV::getVVDPacket()
+{
+  if (!VVDReady)
+    return 0;
   Serial.print("New VVD packet: ");
-  for (int i = 0; i < VVDLength; ++i) {
+  for (int i = 0; i < VVDLength; ++i)
+  {
     Serial.print(ADVpacket[i]);
     Serial.print(",");
   }
@@ -219,10 +265,13 @@ int ADV::getVVDPacket() {
   return 1;
 }
 
-int ADV::getVSDPacket() {
-  if (!VSDReady) return 0;
+int ADV::getVSDPacket()
+{
+  if (!VSDReady)
+    return 0;
   Serial.print("New VSD packet: ");
-  for (int i = 0; i < VSDLength; ++i) {
+  for (int i = 0; i < VSDLength; ++i)
+  {
     Serial.print(ADVpacket[i]);
     Serial.print(",");
   }
@@ -231,5 +280,3 @@ int ADV::getVSDPacket() {
   VSDReady = false;
   return 1;
 }
-
-
